@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::color::palettes::css::{DEEP_PINK, LIME};
 use bevy::prelude::*;
 
@@ -120,11 +122,10 @@ fn movement(
         }
 
         transform.translation += time.delta_secs() * 3.0 * direction;
-        *transform = transform.looking_at(Vec3::new(5.0, 1.0, 0.0), Vec3::Y);
     }
 }
 
-fn light(input: Res<ButtonInput<KeyCode>>, mut query: Single<&mut SpotLight, With<Lighter>>) {
+fn light(input: Res<ButtonInput<KeyCode>>, mut query: Single<&mut SpotLight, With<Guard>>) {
     let spotlight = &mut query;
     if input.pressed(KeyCode::Digit1) {
         spotlight.range += 0.1;
@@ -150,26 +151,40 @@ fn check_target(
 
     for trans_movable in &query_movable {
         let pos = trans_movable.translation;
+        let forward = trans_movable.forward();
+
         for trans_target in &query_target {
             let direction = trans_target.translation - pos;
+            let distance = direction.length();
 
-            // TODO: check the distance and angle within valid range
-            if direction.length() > 0.0 {
-                let ray = Ray3d::new(pos, Dir3::new(direction).unwrap());
-                if let Some((entity, _hit)) = ray_cast
-                    .cast_ray(
-                        ray,
-                        &RayCastSettings::default().with_early_exit_test(&early_exit_test),
-                    )
-                    .first()
-                {
-                    if query_target.get(*entity).is_ok() {
-                        text.0 = String::from("yes");
-                    } else {
-                        text.0 = String::from("no");
+            if distance < 1.0 {
+                // body touch
+                text.0 = String::from("yes");
+                continue;
+            } else if distance < 20.0 {
+                // I can see 20 meters far
+                if let Ok(dir) = Dir3::new(direction) {
+                    if forward.angle_between(direction) < PI / 3.0 {
+                        // I can see 120 degree
+                        let ray = Ray3d::new(pos, dir);
+                        if let Some((entity, _hit)) = ray_cast
+                            .cast_ray(
+                                ray,
+                                &RayCastSettings::default().with_early_exit_test(&early_exit_test),
+                            )
+                            .first()
+                        {
+                            if query_target.get(*entity).is_ok() {
+                                // no obstacle
+                                text.0 = String::from("yes");
+                                continue;
+                            }
+                        }
                     }
                 }
             }
+
+            text.0 = String::from("no");
         }
     }
 }
