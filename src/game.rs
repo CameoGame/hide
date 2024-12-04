@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::color::palettes::css::{GREEN, LIME, SANDY_BROWN, WHITE};
+use bevy::color::palettes::css::{LIME, SANDY_BROWN, WHITE};
 use bevy::prelude::*;
 
 const LIGHT_STRONG: f32 = 10_000_000.;
