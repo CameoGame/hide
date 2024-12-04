@@ -7,9 +7,15 @@ pub(super) struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostStartup, setup_light);
-        app.add_systems(FixedUpdate, (movement,));
-        app.add_systems(FixedUpdate, (light_check_target_within, check_target));
+        app.add_systems(
+            PostStartup,
+            (spawn_stage, spawn_guard, spawn_player, spawn_ui),
+        );
+        app.add_systems(FixedUpdate, (input_movement,));
+        app.add_systems(
+            FixedUpdate,
+            (light_check_target_within, guard_check_target_within),
+        );
     }
 }
 
@@ -29,7 +35,7 @@ struct Target;
 struct Obstacle;
 
 #[derive(Component)]
-#[require(Transform)]
+#[require(Transform, Visibility)]
 struct Actor;
 
 #[derive(Component)]
@@ -54,24 +60,14 @@ struct VisionSector;
 #[derive(Component)]
 struct UnderLight;
 
-fn setup_light(
+fn spawn_stage(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.spawn((
-        Text::new("UI"),
-        Node {
-            position_type: PositionType::Absolute,
-            bottom: Val::Px(12.0),
-            left: Val::Px(12.0),
-            ..default()
-        },
-    ));
-
     // floor plane
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(15.0, 10.0))),
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(120.0, 50.0))),
         MeshMaterial3d(materials.add(StandardMaterial {
             base_color: Color::WHITE,
             perceptual_roughness: 1.0,
@@ -79,18 +75,60 @@ fn setup_light(
         })),
     ));
 
-    // guard
+    // cube
+    commands.spawn((
+        Mesh3d(meshes.add(Cuboid::new(2.0, 5., 2.))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color: SANDY_BROWN.into(),
+            emissive: LinearRgba::new(0.0, 0.0, 0.0, 0.9),
+            ..default()
+        })),
+        Transform::from_xyz(5.0, 2.5, 0.0),
+        Obstacle,
+    ));
+
+    // fixed light
+    commands
+        .spawn((
+            Actor,
+            Transform::from_xyz(0.0, 5.0, 0.0).looking_at(-Vec3::Y, Vec3::Y),
+            LightSource,
+        ))
+        .with_child((
+            SpotLight {
+                intensity: 10_000.0,
+                color: WHITE.into(),
+                shadows_enabled: true,
+                inner_angle: PI / 4.0,
+                outer_angle: PI / 3.0,
+                range: 15.0,
+                radius: 0.07,
+                ..default()
+            },
+            Sector {
+                angle: PI / 4.0,
+                max_distance: 10.0,
+                min_distance: 0.0,
+            },
+            LightSector,
+        ));
+}
+
+fn spawn_guard(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     commands
         .spawn((
             Actor,
             Transform::from_xyz(1.0, 1.0, 3.0).looking_at(Vec3::new(5.0, 1.0, 0.0), Vec3::Y),
-            Movable,
             Guard,
             LightSource,
         ))
         .with_child((
             SpotLight {
-                intensity: 400_000.0,
+                intensity: 4_000.0,
                 color: WHITE.into(),
                 shadows_enabled: true,
                 inner_angle: PI / 8.0,
@@ -131,45 +169,16 @@ fn setup_light(
             //     ..default()
             // },
         ));
-    commands
-        .spawn((
-            Actor,
-            Transform::from_xyz(0.0, 5.0, 0.0).looking_at(-Vec3::Y, Vec3::Y),
-            LightSource,
-        ))
-        .with_child((
-            SpotLight {
-                intensity: 1_000_000.0,
-                color: WHITE.into(),
-                shadows_enabled: true,
-                inner_angle: PI / 4.0,
-                outer_angle: PI / 3.0,
-                range: 15.0,
-                radius: 0.07,
-                ..default()
-            },
-            Sector {
-                angle: PI / 4.0,
-                max_distance: 10.0,
-                min_distance: 0.0,
-            },
-            LightSector,
-        ));
+}
 
-    // cube
-    commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(2.0, 5., 2.))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: SANDY_BROWN.into(),
-            emissive: LinearRgba::new(0.0, 0.0, 0.0, 0.9),
-            ..default()
-        })),
-        Transform::from_xyz(5.0, 2.5, 0.0),
-        Obstacle,
-    ));
-
+fn spawn_player(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     commands.spawn((
         Target,
+        Movable,
         Mesh3d(meshes.add(Capsule3d::new(0.5, 2.0))),
         MeshMaterial3d(materials.add(StandardMaterial {
             base_color: LIME.into(),
@@ -179,7 +188,21 @@ fn setup_light(
     ));
 }
 
-fn movement(
+fn spawn_ui(mut commands: Commands) {
+    commands.spawn((
+        Text::new("UI"),
+        Node {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(12.0),
+            left: Val::Px(12.0),
+            ..default()
+        },
+    ));
+
+    commands.spawn((Text2d::new("UI"),));
+}
+
+fn input_movement(
     input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     mut query: Query<&mut Transform, With<Movable>>,
@@ -233,7 +256,7 @@ fn light_check_target_within(
     }
 }
 
-fn check_target(
+fn guard_check_target_within(
     mut ray_cast: MeshRayCast,
     mut text: Single<&mut Text>,
     query_source: Query<(Entity, &GlobalTransform, &Sector), With<VisionSector>>,

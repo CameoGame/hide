@@ -12,8 +12,17 @@ fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
         Camera {
+            order: 1,
             ..Default::default()
         },
         Transform::from_xyz(0.0, 20., 0.0).looking_at(Vec3::ZERO, Vec3::X),
+    ));
+
+    commands.spawn((
+        Camera2d::default(),
+        Camera {
+            order: 10,
+            ..Default::default()
+        },
     ));
 }
