@@ -12,8 +12,8 @@ fn main() {
         primary_window: Some(Window {
             title: "Game".into(),
             present_mode: PresentMode::AutoNoVsync,
-            resolution: WindowResolution::new(1024.0, 576.0),
-            resizable: false,
+            resolution: WindowResolution::new(1600.0, 900.0),
+            resizable: true,
             ..bevy::prelude::default()
         }),
         ..bevy::prelude::default()

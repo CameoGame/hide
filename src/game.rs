@@ -1,7 +1,11 @@
 use std::f32::consts::PI;
 
-use bevy::color::palettes::css::{LIME, SANDY_BROWN, WHITE};
+use bevy::color::palettes::css::{GREEN, LIME, SANDY_BROWN, WHITE};
 use bevy::prelude::*;
+
+const LIGHT_STRONG: f32 = 10_000_000.;
+const LIGHT_NORMAL: f32 = 1_000_000.;
+const LIGHT_FLASHLIGHT: f32 = 400_000.;
 
 pub(super) struct GamePlugin;
 
@@ -91,22 +95,22 @@ fn spawn_stage(
     commands
         .spawn((
             Actor,
-            Transform::from_xyz(0.0, 5.0, 0.0).looking_at(-Vec3::Y, Vec3::Y),
+            Transform::from_xyz(10.0, 5.0, -5.0).looking_at(Vec3::ZERO, Vec3::Y),
             LightSource,
         ))
         .with_child((
             SpotLight {
-                intensity: 10_000.0,
+                intensity: LIGHT_NORMAL,
                 color: WHITE.into(),
                 shadows_enabled: true,
                 inner_angle: PI / 4.0,
                 outer_angle: PI / 3.0,
-                range: 15.0,
+                range: 12.5,
                 radius: 0.07,
                 ..default()
             },
             Sector {
-                angle: PI / 4.0,
+                angle: PI / 3.0,
                 max_distance: 10.0,
                 min_distance: 0.0,
             },
@@ -122,18 +126,18 @@ fn spawn_guard(
     commands
         .spawn((
             Actor,
-            Transform::from_xyz(1.0, 1.0, 3.0).looking_at(Vec3::new(5.0, 1.0, 0.0), Vec3::Y),
+            Transform::from_xyz(1.0, 1.0, 5.0).looking_at(Vec3::new(5.0, 1.0, 0.0), Vec3::Y),
             Guard,
             LightSource,
         ))
         .with_child((
             SpotLight {
-                intensity: 4_000.0,
+                intensity: LIGHT_FLASHLIGHT,
                 color: WHITE.into(),
                 shadows_enabled: true,
                 inner_angle: PI / 8.0,
                 outer_angle: PI / 4.0,
-                range: 12.0,
+                range: 10.0,
                 radius: 0.07,
                 ..default()
             },
@@ -159,12 +163,12 @@ fn spawn_guard(
             VisionSector,
             // debug
             // SpotLight {
-            //     intensity: 2_000_000.0,
+            //     intensity: LIGHT_STRONG,
             //     color: GREEN.into(),
-            //     shadows_enabled: true,
+            //     // shadows_enabled: true,
             //     inner_angle: PI / 3.0,
             //     outer_angle: PI / 3.0,
-            //     range: 10.0,
+            //     range: 20.0,
             //     radius: 0.07,
             //     ..default()
             // },
@@ -198,8 +202,6 @@ fn spawn_ui(mut commands: Commands) {
             ..default()
         },
     ));
-
-    commands.spawn((Text2d::new("UI"),));
 }
 
 fn input_movement(
