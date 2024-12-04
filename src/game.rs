@@ -13,6 +13,47 @@ impl Plugin for GamePlugin {
     }
 }
 
+#[derive(Component)]
+struct Movable;
+
+#[derive(Component)]
+struct Guard;
+
+#[derive(Component)]
+struct LightSource;
+
+#[derive(Component)]
+struct Target;
+
+#[derive(Component)]
+struct Obstacle;
+
+#[derive(Component)]
+#[require(Transform)]
+struct Actor;
+
+#[derive(Component)]
+#[require(Transform)]
+struct Sector {
+    /// half woking angle in radians
+    angle: f32,
+
+    /// if target out this distance, no effect at all
+    max_distance: f32,
+
+    /// if target in this distance, no more check
+    min_distance: f32,
+}
+
+#[derive(Component)]
+struct LightSector;
+
+#[derive(Component)]
+struct VisionSector;
+
+#[derive(Component)]
+struct UnderLight;
+
 fn setup_light(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -38,7 +79,7 @@ fn setup_light(
         })),
     ));
 
-    // green spot light
+    // guard
     commands
         .spawn((
             Actor,
@@ -47,16 +88,24 @@ fn setup_light(
             Guard,
             LightSource,
         ))
-        .with_child((SpotLight {
-            intensity: 200_000.0,
-            color: WHITE.into(),
-            shadows_enabled: true,
-            inner_angle: PI / 6.0,
-            outer_angle: PI / 4.0,
-            range: 10.0,
-            radius: 0.07,
-            ..default()
-        },))
+        .with_child((
+            SpotLight {
+                intensity: 400_000.0,
+                color: WHITE.into(),
+                shadows_enabled: true,
+                inner_angle: PI / 8.0,
+                outer_angle: PI / 4.0,
+                range: 12.0,
+                radius: 0.07,
+                ..default()
+            },
+            Sector {
+                angle: PI / 4.0,
+                max_distance: 8.0,
+                min_distance: 0.0,
+            },
+            LightSector,
+        ))
         .with_child((
             Mesh3d(meshes.add(Capsule3d::new(0.5, 2.0))),
             MeshMaterial3d(materials.add(StandardMaterial {
@@ -64,6 +113,47 @@ fn setup_light(
                 emissive: LinearRgba::new(10.0, 0.0, 1.0, 0.9),
                 ..default()
             })),
+            Sector {
+                angle: PI / 3.0,
+                max_distance: 20.0,
+                min_distance: 1.0,
+            },
+            VisionSector,
+            // debug
+            // SpotLight {
+            //     intensity: 2_000_000.0,
+            //     color: GREEN.into(),
+            //     shadows_enabled: true,
+            //     inner_angle: PI / 3.0,
+            //     outer_angle: PI / 3.0,
+            //     range: 10.0,
+            //     radius: 0.07,
+            //     ..default()
+            // },
+        ));
+    commands
+        .spawn((
+            Actor,
+            Transform::from_xyz(0.0, 5.0, 0.0).looking_at(-Vec3::Y, Vec3::Y),
+            LightSource,
+        ))
+        .with_child((
+            SpotLight {
+                intensity: 1_000_000.0,
+                color: WHITE.into(),
+                shadows_enabled: true,
+                inner_angle: PI / 4.0,
+                outer_angle: PI / 3.0,
+                range: 15.0,
+                radius: 0.07,
+                ..default()
+            },
+            Sector {
+                angle: PI / 4.0,
+                max_distance: 10.0,
+                min_distance: 0.0,
+            },
+            LightSector,
         ));
 
     // cube
@@ -88,25 +178,6 @@ fn setup_light(
         Transform::from_xyz(0.0, 1.0, 0.0),
     ));
 }
-
-#[derive(Component)]
-struct Movable;
-
-#[derive(Component)]
-struct Guard;
-
-#[derive(Component)]
-struct LightSource;
-
-#[derive(Component)]
-struct Target;
-
-#[derive(Component)]
-struct Obstacle;
-
-#[derive(Component)]
-#[require(Transform)]
-struct Actor;
 
 fn movement(
     input: Res<ButtonInput<KeyCode>>,
@@ -135,7 +206,7 @@ fn movement(
 fn light_check_target_within(
     mut commands: Commands,
     mut ray_cast: MeshRayCast,
-    query_source: Query<(&GlobalTransform, &LightRange), With<LightSource>>,
+    query_source: Query<(&GlobalTransform, &Sector), With<LightSector>>,
     query_target: Query<(Entity, &GlobalTransform), With<Target>>,
 ) {
     let early_exit_test = |entity: Entity| -> bool { query_target.get(entity).is_ok() };
@@ -164,13 +235,15 @@ fn light_check_target_within(
 
 fn check_target(
     mut ray_cast: MeshRayCast,
-    query_source: Query<(Entity, &GlobalTransform, &VisionRange), With<LightSource>>,
-    query_target: Query<&GlobalTransform, (With<Target>, With<UnderLight>)>,
+    mut text: Single<&mut Text>,
+    query_source: Query<(Entity, &GlobalTransform, &Sector), With<VisionSector>>,
+    query_target: Query<(&GlobalTransform, Option<&UnderLight>), With<Target>>,
 ) {
     let early_exit_test = |entity: Entity| -> bool { query_target.get(entity).is_ok() };
-    let double_check = |entity: Entity| -> bool { query_target.get(entity).is_ok() };
-    for (entity, source, range) in &query_source {
-        for target in &query_target {
+    let double_check =
+        |entity: Entity| -> bool { query_target.get(entity).is_ok_and(|(_, opt)| opt.is_some()) };
+    for (_entity, source, range) in &query_source {
+        for (target, _under_light) in &query_target {
             if check_target_within_range(
                 &mut ray_cast,
                 source,
@@ -179,88 +252,39 @@ fn check_target(
                 &early_exit_test,
                 &double_check,
             ) {
+                text.0 = String::from("YES");
                 // see player
                 // handle see one player
                 //          and see multiple player
+            } else {
+                // debug
+                if _under_light.is_some() {
+                    text.0 = String::from("NO");
+                } else {
+                    text.0 = String::from("DARK");
+                }
             }
         }
     }
 }
 
-#[derive(Component)]
-struct LightRange {
-    intensity: f32,
-    angle: f32,
-    distance: f32,
-    color: Color,
-}
-
-#[derive(Component)]
-struct VisionRange {
-    /// full woking angle in radians
-    angle: f32,
-
-    /// if target out this distance, no effect at all
-    max_distance: f32,
-
-    /// if target in this distance, no more check
-    min_distance: f32,
-}
-
-trait SectorLike {
-    fn angle(&self) -> f32;
-    fn max_distance(&self) -> f32;
-    fn min_distance(&self) -> f32;
-}
-
-impl SectorLike for LightRange {
-    fn angle(&self) -> f32 {
-        self.angle
-    }
-
-    fn max_distance(&self) -> f32 {
-        self.distance
-    }
-
-    fn min_distance(&self) -> f32 {
-        0.0
-    }
-}
-
-impl SectorLike for VisionRange {
-    fn angle(&self) -> f32 {
-        self.angle
-    }
-
-    fn max_distance(&self) -> f32 {
-        self.max_distance
-    }
-
-    fn min_distance(&self) -> f32 {
-        self.min_distance
-    }
-}
-
-#[derive(Component)]
-struct UnderLight;
-
-fn check_target_within_range<'a, S: SectorLike>(
+fn check_target_within_range(
     ray_cast: &mut MeshRayCast,
     source: &GlobalTransform,
     target: &GlobalTransform,
-    range: &S,
-    early_exit_test: &'a impl Fn(Entity) -> bool,
-    double_check: &'a impl Fn(Entity) -> bool,
+    range: &Sector,
+    early_exit_test: &impl Fn(Entity) -> bool,
+    double_check: &impl Fn(Entity) -> bool,
 ) -> bool {
     let forward = source.forward();
     let direction = target.translation() - source.translation();
     let distance = direction.length();
 
-    if distance < range.min_distance() {
+    if distance < range.min_distance {
         return true;
     }
 
-    if distance < range.max_distance() && forward.angle_between(direction) < range.angle() / 2.0 {
+    if distance < range.max_distance && forward.angle_between(direction) < range.angle {
         if let Ok(dir) = Dir3::new(direction) {
             let ray = Ray3d::new(source.translation(), dir);
             if let Some((entity, _hit)) = ray_cast
