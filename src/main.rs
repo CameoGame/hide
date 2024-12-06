@@ -4,14 +4,13 @@ mod game;
 mod misc;
 
 use bevy::prelude::*;
-use bevy::window::{PresentMode, WindowResolution};
+use bevy::window::WindowResolution;
 
 fn main() {
     let mut app = App::new();
     let window_plugin = WindowPlugin {
         primary_window: Some(Window {
             title: "Game".into(),
-            present_mode: PresentMode::AutoNoVsync,
             resolution: WindowResolution::new(1600.0, 900.0),
             resizable: true,
             ..bevy::prelude::default()
@@ -43,4 +42,3 @@ fn main() {
 
     app.run();
 }
-
