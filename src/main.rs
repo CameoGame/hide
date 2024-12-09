@@ -2,6 +2,7 @@
 
 mod game;
 mod misc;
+mod third_party;
 
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
@@ -36,6 +37,8 @@ fn main() {
     {
         app.add_plugins(DefaultPlugins.set(window_plugin));
     }
+
+    app.add_plugins(third_party::ThirdPartyPlugins);
 
     // game
     app.add_plugins((misc::MiscPlugin, game::GamePlugin));

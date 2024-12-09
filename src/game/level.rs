@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 use super::*;
 
@@ -17,7 +18,9 @@ fn spawn_stage(
 ) {
     // floor plane
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(120.0, 50.0))),
+        RigidBody::Fixed,
+        Collider::cuboid(15.0, 0.5, 20.0),
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(30.0, 40.0))),
         MeshMaterial3d(materials.add(StandardMaterial {
             base_color: Color::WHITE,
             perceptual_roughness: 1.0,
@@ -27,6 +30,8 @@ fn spawn_stage(
 
     // cube
     commands.spawn((
+        RigidBody::Fixed,
+        Collider::cuboid(1.0, 2.5, 10.0),
         Mesh3d(meshes.add(Cuboid::new(2.0, 5., 20.))),
         MeshMaterial3d(materials.add(StandardMaterial {
             base_color: SANDY_BROWN.into(),
@@ -125,7 +130,14 @@ fn spawn_sneaker(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands
-        .spawn((Sneaker, Player, Transform::from_xyz(0.0, 1.0, 0.0)))
+        .spawn((
+            Sneaker,
+            Player,
+            Transform::from_xyz(0.0, 1.0, 0.0),
+            RigidBody::Dynamic,
+            // Collider::cuboid(1.25, 1.0, 1.25),
+            Collider::capsule_y(1.0, 0.5),
+        ))
         .with_child((
             Mesh3d(meshes.add(Capsule3d::new(0.5, 2.0))),
             MeshMaterial3d(materials.add(StandardMaterial {

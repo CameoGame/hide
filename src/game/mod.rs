@@ -86,7 +86,7 @@ fn spawn_ui(mut commands: Commands) {
 fn guard_check_target_within(
     mut ray_cast: MeshRayCast,
     mut text: Single<&mut Text>,
-    query_source: Query<(Entity, &GlobalTransform, &Sector), With<VisionSector>>,
+    query_source: Query<(Entity, &GlobalTransform, &Sector), With<Guard>>,
     query_target: Query<(&GlobalTransform, Option<&UnderLight>), With<Sneaker>>,
 ) {
     let early_exit_test = |entity: Entity| -> bool { query_target.get(entity).is_ok() };
