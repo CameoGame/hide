@@ -11,11 +11,11 @@ opt-level = 3
 
 [dependencies]
 bevy = "0.15"
-bevy_rapier3d = { version = "0.28.0", features = ["rapier-debug-render", "simd-stable"] }
-enum-iterator = "2"
-nearly = "0.4"
-rand = "0.8"
-uuid = { version = "1", features = ["v4", "fast-rng"] }
+bevy_rapier3d = { version = "0.28", features = ["rapier-debug-render", "simd-stable"] }
+# enum-iterator = "2"
+# nearly = "0.4"
+# rand = "0.8"
+# uuid = { version = "1", features = ["v4", "fast-rng"] }
 
 [target.'cfg(unix)'.dependencies]
 bevy = { version = "0.15", features = ["wayland"] }

@@ -1,4 +1,4 @@
-mod input;
+mod local_player;
 mod level;
 mod light;
 
@@ -17,7 +17,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             level::GameLevelPlugin,
-            input::GameInputPlugin,
+            local_player::LocalPlayerPlugin,
             light::LightPlugin,
         ));
 
