@@ -15,7 +15,8 @@ fn setup_camera(mut commands: Commands) {
             order: 1,
             ..Default::default()
         },
-        Transform::from_xyz(0.0, 40., 0.0).looking_at(Vec3::ZERO, Vec3::X),
+        // Transform::from_xyz(0.0, 40., 0.0).looking_at(Vec3::ZERO, Vec3::X),
+        Transform::from_xyz(-40.0, 40., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
     commands.spawn((

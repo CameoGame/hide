@@ -17,20 +17,21 @@ fn spawn_stage(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // floor plane
-    commands.spawn((
-        RigidBody::Fixed,
-        Collider::cuboid(15.0, 0.5, 20.0),
-        Damping {
-            linear_damping: 0.0,
-            ..Default::default()
-        },
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(30.0, 40.0))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::WHITE,
-            perceptual_roughness: 1.0,
-            ..default()
-        })),
-    ));
+    commands
+        .spawn((
+            RigidBody::Fixed,
+            Collider::cuboid(15.0, 1.0, 20.0),
+            Transform::from_xyz(0., -1.0, 0.),
+        ))
+        .with_child((
+            Transform::from_xyz(0., 1.0, 0.),
+            Mesh3d(meshes.add(Plane3d::default().mesh().size(30.0, 40.0))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::WHITE,
+                perceptual_roughness: 1.0,
+                ..default()
+            })),
+        ));
 
     // cube
     commands.spawn((
@@ -81,10 +82,11 @@ fn spawn_guard(
     commands
         .spawn((
             Guard,
-            Transform::from_xyz(1.0, 1.0, 5.0).looking_at(Vec3::new(5.0, 1.0, 0.0), Vec3::Y),
+            Transform::from_xyz(2.0, 1.2, 5.0).looking_at(Vec3::new(5.0, 1.0, 0.0), Vec3::Y),
             RigidBody::Dynamic,
-            Collider::capsule_y(1.0, 0.5),
+            LockedAxes::ROTATION_LOCKED_X | LockedAxes::ROTATION_LOCKED_Z,
         ))
+        .with_child(Collider::capsule_y(0.5, 0.5))
         .with_child((
             SpotLight {
                 intensity: LIGHT_FLASHLIGHT,
@@ -104,7 +106,7 @@ fn spawn_guard(
             LightSector,
         ))
         .with_child((
-            Mesh3d(meshes.add(Capsule3d::new(0.5, 2.0))),
+            Mesh3d(meshes.add(Capsule3d::new(0.5, 1.0))),
             MeshMaterial3d(materials.add(StandardMaterial {
                 base_color: LIME.into(),
                 emissive: LinearRgba::new(10.0, 0.0, 1.0, 0.9),
@@ -139,27 +141,13 @@ fn spawn_sneaker(
         .spawn((
             Sneaker,
             Player,
-            Transform::from_xyz(0.0, 1.0, 0.0),
-            // RigidBody::Dynamic,
-            RigidBody::KinematicPositionBased,
-            // RigidBody::KinematicVelocityBased,
-            // Collider::cuboid(0.25, 1.0, 0.25),
-            Collider::capsule_y(1.0, 0.5),
-            // Collider::ball(1.0),
-            // AdditionalMassProperties::MassProperties(MassProperties {
-            //     local_center_of_mass: Vec3::new(0.0, -8.0, 0.0),
-            //     // mass: 100.0,
-            //     ..Default::default()
-            // }),
-            Dominance::group(20),
-            Damping {
-                linear_damping: 0.0,
-                ..Default::default()
-            },
+            Transform::from_xyz(0.0, 1.2, 0.0),
+            RigidBody::Dynamic,
+            LockedAxes::ROTATION_LOCKED_X | LockedAxes::ROTATION_LOCKED_Z,
         ))
+        .with_child(Collider::capsule_y(0.5, 0.5))
         .with_child((
-            Mesh3d(meshes.add(Capsule3d::new(0.5, 2.0))),
-            // Mesh3d(meshes.add(Sphere::new(1.0))),
+            Mesh3d(meshes.add(Capsule3d::new(0.5, 1.0))),
             MeshMaterial3d(materials.add(StandardMaterial {
                 base_color: LIME.into(),
                 emissive: LinearRgba::new(10.0, 0.0, 1.0, 0.9),
