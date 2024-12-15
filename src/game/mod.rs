@@ -1,12 +1,12 @@
-mod guard;
 mod level;
-mod light;
 mod local_player;
-mod sneaker;
+mod character;
 
 use std::f32::consts::PI;
 
+use bevy::color::palettes::css::{LIME, SANDY_BROWN, WHITE};
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 // const LIGHT_STRONG: f32 = 10_000_000.;
 const LIGHT_NORMAL: f32 = 1_000_000.;
@@ -17,14 +17,22 @@ pub(super) struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            level::GameLevelPlugin,
+            level::LevelPlugin,
+            character::CharacterPlugin,
             local_player::LocalPlayerPlugin,
-            light::LightPlugin,
         ));
 
         app.add_systems(PostStartup, spawn_ui);
     }
 }
+
+#[derive(Component, Default)]
+#[require(Transform, Visibility)]
+struct Actor;
+
+#[derive(Component, Default)]
+#[require(Actor)]
+struct Character;
 
 #[derive(Component)]
 #[require(Character)]
@@ -40,14 +48,6 @@ struct Sneaker;
 
 #[derive(Component)]
 struct Obstacle;
-
-#[derive(Component, Default)]
-#[require(Transform, Visibility)]
-struct Actor;
-
-#[derive(Component, Default)]
-#[require(Actor)]
-struct Character;
 
 #[derive(Component)]
 #[require(Transform)]
@@ -68,8 +68,11 @@ struct LightSector;
 #[derive(Component)]
 struct VisionSector;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 struct UnderLight;
+
+#[derive(Component)]
+struct DebugText(pub u32);
 
 fn spawn_ui(mut commands: Commands) {
     commands.spawn((
@@ -80,6 +83,29 @@ fn spawn_ui(mut commands: Commands) {
             left: Val::Px(12.0),
             ..default()
         },
+        DebugText(0),
+    ));
+
+    commands.spawn((
+        Text::new("UI"),
+        Node {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(120.0),
+            left: Val::Px(12.0),
+            ..default()
+        },
+        DebugText(1),
+    ));
+
+    commands.spawn((
+        Text::new("UI"),
+        Node {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(240.0),
+            left: Val::Px(12.0),
+            ..default()
+        },
+        DebugText(2),
     ));
 }
 
@@ -121,3 +147,4 @@ fn check_target_within_range(
 
     false
 }
+
